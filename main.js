@@ -218,6 +218,8 @@ function initReveal(){
     document.querySelectorAll(".count-item .num[data-to]").forEach(runCount);
     return;
   }
+  /* the stats already read their final numbers in the HTML; keep the row hidden until it scrolls in, then count up */
+  document.querySelectorAll(".count-row").forEach(r => r.classList.add("count-pending"));
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if(!e.isIntersecting) return;
@@ -227,6 +229,7 @@ function initReveal(){
       if(t.classList.contains("timeline")) t.classList.add("drawn");
       if(t.classList.contains("sub-timeline")) t.classList.add("drawn");
       if(t.classList.contains("count-row")){
+        t.classList.remove("count-pending");
         t.querySelectorAll(".num[data-to]").forEach(runCount);
       }
       io.unobserve(t);
@@ -241,13 +244,18 @@ function runCount(el){
   const suffix = el.getAttribute("data-suffix") || "";
   const from = parseInt(el.getAttribute("data-from") || "0", 10);
   const target = parseInt(to, 10);
-  if(REDUCED || isNaN(target)){ el.textContent = to + suffix; return; }
-  const dur = 1100, start = performance.now();
+  const finalText = to + suffix;
+  /* reduced motion, bad data, or a single-step number (1M+): just show the final value */
+  if(REDUCED || isNaN(target) || target <= 1){ el.textContent = finalText; return; }
+  const dur = 1100;
+  let start = null;
   function tick(now){
+    if(start === null){ start = now; requestAnimationFrame(tick); return; }   /* skip the very first frame */
     const p = Math.min(1, (now-start)/dur);
     const eased = 1 - Math.pow(1-p, 3);
-    const val = Math.round(from + (target-from)*eased);
-    el.textContent = val + suffix;
+    let val = Math.round(from + (target-from)*eased);
+    if(p < 1) val = Math.max(val, from + 1);     /* never show the starting value */
+    el.textContent = p < 1 ? val + suffix : finalText;
     if(p < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
@@ -298,6 +306,7 @@ function initEssayFan(){
       li.style.setProperty("--ad", Math.min(ad, 3));
       li.classList.toggle("is-active", d === 0);
       li.classList.toggle("is-far", ad > 2);
+      li.classList.toggle("is-out", ad > 1);
       const a = li.firstElementChild;
       a.tabIndex = d === 0 ? 0 : -1;
       if(d === 0) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
@@ -358,7 +367,6 @@ function renderStoryGrid(){
           <a class="read" href="${href}">Read &rarr;</a>
           <span class="meta">${readTime(post)}</span>
         </div>
-        <div class="li">Originally on <a href="https://www.linkedin.com/in/pranjaldesai15/" target="_blank" rel="noopener">LinkedIn<span class="sr-only"> (opens in a new tab)</span></a></div>
       </div>
     </div>`;
   }).join("");

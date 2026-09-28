@@ -993,3 +993,31 @@ footer{
   main{ animation:none !important; }
 }
 .menu-panel{ touch-action:pan-y; }
+
+
+/* ===============================================================
+   Small fixes: stats never flash starting values; phone essay stack
+   =============================================================== */
+.count-row{ transition:opacity .5s ease; }
+.count-row.count-pending{ opacity:0; visibility:hidden; }
+
+@media (max-width:480px){
+  /* the stack fills the screen width and is clipped at the screen edge, so
+     only a small slice of the neighbouring card shows on each side */
+  .ef-viewport{ margin-inline:calc(-1 * max(20px, 5vw)); overflow-x:clip; }
+  .essay-fan{ --peek:26px; }
+  .ef-item{
+    transform-origin:50% 100%;
+    transform:
+      translateX(calc(var(--d, 0) * (var(--peek) + var(--cw) * .03)))
+      translateY(calc(var(--ad, 0) * 6px))
+      rotate(calc(var(--d, 0) * 2deg))
+      scale(calc(1 - var(--ad, 0) * .06));
+    opacity:calc(1 - var(--ad, 0) * .12);
+  }
+  .ef-item.is-out{ visibility:hidden; opacity:0; transition:transform .62s cubic-bezier(.22,1,.36,1), opacity .4s ease, visibility 0s .4s; }
+}
+@media (prefers-reduced-motion:reduce){
+  .count-row{ transition:none; }
+  .ef-item.is-out{ transition:none; }
+}
